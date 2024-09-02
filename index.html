@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to the world of UNIVEST</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('https://www.pwmnet.com/wp-content/uploads/2024/03/GET-bitcoin-web-scaled.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            padding: 20px;
+            margin: 0;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        header img {
+            max-width: 150px; /* Adjust as needed */
+            height: auto;
+        }
+
+        section {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+
+        #historical-chart,
+        #historical-chart-10y {
+            width: 100%;
+            height: 400px;
+            margin: 20px auto;
+        }
+
+        button {
+            background-color: #ff9900;
+            border: none;
+            padding: 10px;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #cc7a00;
+        }
+
+        #quiz-container {
+            text-align: center;
+        }
+
+        #score-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #score-container canvas {
+            width: 100px;
+            height: 100px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <img src="sham.jpg" alt="Bitcoin Portal Logo">
+        <h1>Welcome to the world of UNIVEST</h1>
+    </header>
+
+    <section id="price">
+        <h2>Current Bitcoin Price</h2>
+        <div id="bitcoin-price">https://www.coindesk.com/</div>
+    </section>
+
+    <section id="news">
+        <h2>Recent Bitcoin News</h2>
+        <p>Bitcoin Price Drops: Bitcoin's price has recently dipped to approximately $57,500, marking a 10% decline at the start of September, which is traditionally a bearish month for the cryptocurrency market. This drop follows a broader trend of declining prices over the past few months</p>
+        <hr>
+        <p>A leading source for Bitcoin and cryptocurrency news, offering analysis, price updates, and insights into market trends. It covers a wide range of topics including blockchain, DeFi, and regulatory developments</p>
+        <div id="news-headlines">Loading...</div>
+        <p>For more news, visit <a href="https://www.coindesk.com" target="_blank" style="color: #00ff4c;">CoinDesk</a></p>
+        <p>For more news, visit <a href="https://cointelegraph.com" target="_blank" style="color: #ff9900;">CoinTelegraph</a></p>
+    </section>
+
+    <section id="trends">
+        <h2>Bitcoin Historical Price Trends (Last Year)</h2>
+        <canvas id="historical-chart"></canvas>
+    </section>
+
+    <section id="trends-10y">
+        <h2>Bitcoin Historical Price Trends (Last 10 Years)</h2>
+        <canvas id="historical-chart-10y"></canvas>
+    </section>
+
+    <section id="quiz">
+        <h2>Bitcoin Quiz</h2>
+        <div id="quiz-container">
+            <p id="quiz-question">Loading...</p>
+            <button class="quiz-option" id="option1"></button>
+            <button class="quiz-option" id="option2"></button>
+            <button class="quiz-option" id="option3"></button>
+            <button class="quiz-option" id="option4"></button>
+            <p id="quiz-result"></p>
+        </div>
+    </section>
+
+    <section id="score">
+        <h2>Quiz Results</h2>
+        <div id="score-container">
+            <p id="score-summary">Score Summary:</p>
+            <canvas id="results-chart"></canvas>
+            <p id="right-answers">Right Answers: 0</p>
+            <p id="wrong-answers">Wrong Answers: 0</p>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 Interactive Bitcoin Portal</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            fetchBitcoinPrice();
+            fetchBitcoinNews();
+            fetchBitcoinHistoricalTrends();
+            fetchBitcoinHistoricalTrends10y();
+            loadQuiz();
+        });
+
+        // Fetching real-time Bitcoin price
+        function fetchBitcoinPrice() {
+            $('#bitcoin-price').html('<p>Fetching current price...</p>');
+            $.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd", function (data) {
+                $('#bitcoin-price').html(`<p>Bitcoin Price: $${data.bitcoin.usd}</p>`);
+            }).fail(function() {
+                $('#bitcoin-price').html('<p>Error fetching price.</p>');
+            });
+        }
+
+        // Fetching recent Bitcoin news
+        function fetchBitcoinNews() {
+            $('#news-headlines').html('<p>Fetching latest news...</p>');
+            $.get("https://newsapi.org/v2/everything?q=bitcoin&apiKey=YOUR_NEWS_API_KEY", function (data) {
+                const articles = data.articles;
+                $('#news-headlines').html(articles.map(article => `<p><a href="${article.url}" target="_blank">${article.title}</a></p>`).join(''));
+            }).fail(function() {
+                $('#news-headlines').html('<p>Error fetching news.</p>');
+            });
+        }
+
+        // Fetching historical Bitcoin price data for the last year and rendering the chart
+        function fetchBitcoinHistoricalTrends() {
+            $.get("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=365", function (data) {
+                const prices = data.prices.map(price => ({
+                    x: new Date(price[0]),
+                    y: price[1]
+                }));
+
+                const ctx = document.getElementById('historical-chart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Bitcoin Price (Last Year)',
+                            data: prices,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            fill: false,
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'month'
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Price (USD)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }).fail(function() {
+                $('#historical-chart').html('<p>Error fetching historical data.</p>');
+            });
+        }
+
+        // Fetching historical Bitcoin price data for the last 10 years and rendering the chart
+        function fetchBitcoinHistoricalTrends10y() {
+            $.get("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=3650", function (data) {
+                const prices = data.prices.map(price => ({
+                    x: new Date(price[0]),
+                    y: price[1]
+                }));
+
+                const ctx = document.getElementById('historical-chart-10y').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Bitcoin Price (Last 10 Years)',
+                            data: prices,
+                            borderColor: 'rgba(0, 123, 255, 1)',
+                            fill: false,
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'year'
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Price (USD)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }).fail(function() {
+                $('#historical-chart-10y').html('<p>Error fetching historical data.</p>');
+            });
+        }
+
+        // Quiz data and functionality
+        const quizData = [
+            {
+                question: "Who created Bitcoin?",
+                options: ["Satoshi Nakamoto", "Vitalik Buterin", "Elon Musk", "Bill Gates"],
+                correct: "Satoshi Nakamoto"
+            },
+            {
+                question: "When was Bitcoin created?",
+                options: ["2009", "2015", "2012", "2017"],
+                correct: "2009"
+            },
+            {
+                question: "What is Bitcoin's max supply?",
+                options: ["21 million", "100 million", "1 billion", "Unlimited"],
+                correct: "21 million"
+            },
+            {
+                question: "What is the main purpose of Bitcoin?",
+                options: ["Digital currency", "Smart contracts", "Decentralized storage", "Voting system"],
+                correct: "Digital currency"
+            },
+            {
+                question: "What technology underpins Bitcoin?",
+                options: ["Blockchain", "Cloud computing", "Artificial Intelligence", "Big Data"],
+                correct: "Blockchain"
+            },
+            {
+                question: "What is the smallest unit of Bitcoin called?",
+                options: ["Satoshi", "Mili", "Nano", "Micro"],
+                correct: "Satoshi"
+            },
+            {
+                question: "Which company famously bought $1.5 billion worth of Bitcoin in 2021?",
+                options: ["Tesla", "Square", "Microsoft", "Apple"],
+                correct: "Tesla"
+            },
+            {
+                question: "What does BTC stand for?",
+                options: ["Bitcoin", "Bit Cash", "Bitcoin Token", "BitCoin"],
+                correct: "Bitcoin"
+            },
+            {
+                question: "What is the name of Bitcoin's underlying algorithm?",
+                options: ["SHA-256", "MD5", "SHA-1", "RIPEMD"],
+                correct: "SHA-256"
+            },
+            {
+                question: "What is a Bitcoin wallet used for?",
+                options: ["Storing Bitcoin", "Mining Bitcoin", "Trading Bitcoin", "Investing in Bitcoin"],
+                correct: "Storing Bitcoin"
+            },
+            {
+                question: "What is the process of validating Bitcoin transactions called?",
+                options: ["Mining", "Staking", "Forging", "Earning"],
+                correct: "Mining"
+            },
+            {
+                question: "Which famous exchange was hacked in 2014 leading to the loss of 850,000 Bitcoins?",
+                options: ["Mt. Gox", "Coinbase", "Binance", "Kraken"],
+                correct: "Mt. Gox"
+            },
+            {
+                question: "What is the maximum number of Bitcoins that can ever exist?",
+                options: ["21 million", "50 million", "100 million", "Unlimited"],
+                correct: "21 million"
+            },
+            {
+                question: "What is a Bitcoin address?",
+                options: ["A unique identifier for transactions", "A type of wallet", "A security feature", "A mining pool"],
+                correct: "A unique identifier for transactions"
+            },
+            {
+                question: "Which country was the first to officially recognize Bitcoin as legal tender?",
+                options: ["El Salvador", "Japan", "United States", "China"],
+                correct: "El Salvador"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let rightAnswers = 0;
+        let wrongAnswers = 0;
+
+        function loadQuiz() {
+            if (currentQuestion < quizData.length) {
+                const quiz = quizData[currentQuestion];
+                $('#quiz-question').text(quiz.question);
+                $('#option1').text(quiz.options[0]).off().on('click', checkAnswer);
+                $('#option2').text(quiz.options[1]).off().on('click', checkAnswer);
+                $('#option3').text(quiz.options[2]).off().on('click', checkAnswer);
+                $('#option4').text(quiz.options[3]).off().on('click', checkAnswer);
+            } else {
+                $('#quiz-result').text("Quiz Completed!");
+                displayResults();
+            }
+        }
+
+        function checkAnswer() {
+            const userAnswer = $(this).text();
+            const correctAnswer = quizData[currentQuestion].correct;
+
+            if (userAnswer === correctAnswer) {
+                $('#quiz-result').text("Correct!");
+                rightAnswers += 1;
+            } else {
+                $('#quiz-result').text("Wrong! The correct answer was " + correctAnswer);
+                wrongAnswers += 1;
+            }
+
+            currentQuestion++;
+            loadQuiz();
+        }
+
+        function displayResults() {
+            $('#right-answers').text(`Right Answers: ${rightAnswers}`);
+            $('#wrong-answers').text(`Wrong Answers: ${wrongAnswers}`);
+            const ctx = document.getElementById('results-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Right Answers', 'Wrong Answers'],
+                    datasets: [{
+                        data: [rightAnswers, wrongAnswers],
+                        backgroundColor: ['#4CAF50', '#F44336'],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (tooltipItem) {
+                                    return tooltipItem.label + ': ' + tooltipItem.raw;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
+
+
